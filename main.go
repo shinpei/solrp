@@ -43,16 +43,26 @@ func main() {
 	}
 	lc := 0
 
+	timeFiltStarted := false
+	timeFiltDone := false
+
 	for scanner.Scan() {
+		if timeFiltDone {
+			break
+		}
+
 		lc++
 		r := strings.Split(scanner.Text(), " ")
 		if 14 != len(r) {
 			continue
 		}
 
+		if (r[9] != "path=/select") {
+			continue
+		}
 		if strings.HasPrefix(r[4], *timefilter) == true {
-			fmt.Println(scanner.Text())
-			params := make(map[string]string)
+			timeFiltStarted = true
+			params := make(map[string]interface{})
 
 			path := r[10][8:(len(r[10]) - 1)]
 			ps := strings.Split(path, "&")
@@ -64,17 +74,38 @@ func main() {
 				if *isListKeys {
 					fmt.Print(kv[0]+",")
 				}
-				params[kv[0]] = kv[1]
-			}
-			fmt.Println()
+				switch kv[0] {
+				case "fq":
+					_, ok := params["fq"]
+					if !ok {
+						params["fq"] = new([]string)
+					}
+					arr := params["fq"].(*[]string)
+					*arr = append(*arr, kv[1])
+					params["fq"] = arr
+				default:
+					params[kv[0]] = kv[1]
+				}
 
+			}
+			if *isListKeys {
+				fmt.Println("")
+			}
 			params["time"] = r[4]
 			params["hits"] = strings.Split(r[11], "=")[1]
 			params["qtime"] = strings.Split(r[12], "=")[1]
 			if 0 < len(paramKeys) {
+				arr := new([]string)
+
 				for _, v := range paramKeys {
-					fmt.Printf("%v=%v\n", v, params[v])
+					s := fmt.Sprintf("%v=%v", v, params[v])
+					*arr = append(*arr, s)
 				}
+				fmt.Println(strings.Join(*arr, ","))
+			}
+		} else {
+			if timeFiltStarted {
+				timeFiltDone = true
 			}
 		}
 
