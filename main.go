@@ -26,6 +26,7 @@ func main() {
 	var filename = flag.String("f", "log.txt", "log file")
 	var timefilter = flag.String("t", "", "time")
 	var isListKeys = flag.Bool("lk", false, "list keys")
+	var passthrough = flag.Bool("passthrough", false, "pass this to pass through every parameter")
 	flag.Var(&paramKeys, "key",  "key to print")
 
 	flag.Parse()
@@ -47,12 +48,13 @@ func main() {
 	timeFiltDone := false
 
 	for scanner.Scan() {
+
 		if timeFiltDone {
 			break
 		}
-
+		text := scanner.Text()
 		lc++
-		r := strings.Split(scanner.Text(), " ")
+		r := strings.Split(text, " ")
 		if 14 != len(r) {
 			continue
 		}
@@ -69,6 +71,12 @@ func main() {
 			if len(ps) < 1 {
 				continue
 			}
+			if *passthrough {
+
+				fmt.Println(text)
+				continue
+			}
+
 			for _, v := range ps {
 				kv := strings.Split(v, "=")
 				if *isListKeys {
@@ -93,7 +101,8 @@ func main() {
 			}
 			params["time"] = r[4]
 			params["hits"] = strings.Split(r[11], "=")[1]
-			params["qtime"] = strings.Split(r[12], "=")[1]
+			params["status"] = strings.Split(r[12], "=")[1]
+			params["qtime"] = strings.Split(r[13], "=")[1]
 			if 0 < len(paramKeys) {
 				arr := new([]string)
 
