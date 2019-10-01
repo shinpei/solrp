@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -17,7 +18,6 @@ func (i *keys) String() string {
 	return fmt.Sprint(*i)
 }
 
-
 func (i *keys) Set(value string) error {
 	*i = append(*i, value)
 	return nil
@@ -27,6 +27,9 @@ func main() {
 	var timefilter = flag.String("t", "", "time")
 	var isListKeys = flag.Bool("lk", false, "list keys")
 	var passthrough = flag.Bool("passthrough", false, "pass this to pass through every parameter")
+	var tabmode = flag.Bool("tab", false, "tab mode")
+
+	var qtimeFilt = flag.Int("qf", 0, "qtime filter")
 	flag.Var(&paramKeys, "key",  "key to print")
 
 	flag.Parse()
@@ -46,7 +49,12 @@ func main() {
 
 	timeFiltStarted := false
 	timeFiltDone := false
-
+	var joiner string
+	if (*tabmode) {
+		joiner = "\t"
+	} else {
+		joiner = ","
+	}
 	for scanner.Scan() {
 
 		if timeFiltDone {
@@ -80,7 +88,7 @@ func main() {
 			for _, v := range ps {
 				kv := strings.Split(v, "=")
 				if *isListKeys {
-					fmt.Print(kv[0]+",")
+					fmt.Print(kv[0]+ joiner)
 				}
 				switch kv[0] {
 				case "fq":
@@ -105,12 +113,14 @@ func main() {
 			params["qtime"] = strings.Split(r[13], "=")[1]
 			if 0 < len(paramKeys) {
 				arr := new([]string)
-
-				for _, v := range paramKeys {
-					s := fmt.Sprintf("%v=%v", v, params[v])
-					*arr = append(*arr, s)
+				qtime, _:= params["qtime"].(string)
+				if i, _ := strconv.Atoi(qtime); i > *qtimeFilt {
+					for _, v := range paramKeys {
+						s := fmt.Sprintf("%v=%v", v, params[v])
+						*arr = append(*arr, s)
+					}
+					fmt.Println(strings.Join(*arr, joiner))
 				}
-				fmt.Println(strings.Join(*arr, ","))
 			}
 		} else {
 			if timeFiltStarted {
